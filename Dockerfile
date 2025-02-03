@@ -1,3 +1,4 @@
+
 FROM node:22
 RUN apt-get update && apt-get install -y \
     chromium \
@@ -9,6 +10,22 @@ RUN apt-get update && apt-get install -y \
     libxss1 \
     --no-install-recommends
 
+
+    RUN apt-get update && apt-get install -y \
+    libnss3 \
+    libatk-bridge2.0-0 \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libgbm1 \
+    libglib2.0-0 \
+    libasound2 \
+    --no-install-recommends
+    
 # Set Chromium as the default browser
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
