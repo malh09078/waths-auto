@@ -1,5 +1,5 @@
 #!/bin/bash
 # pnpm run build
 git add .
-git commit -m "first commit1"
+git commit -m "first commit"
 git push -u origin main
