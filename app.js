@@ -10,11 +10,19 @@ const path = require('path');
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer:  {
-        executablePath: '/usr/bin/chromium', 
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      
-      }
+        executablePath: '/usr/bin/google-chrome-stable',
+        headless: "new",  // Use new headless mode
+        args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',  // Prevent /dev/shm issues
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--single-process',         // May help in constrained environments
+            '--disable-gpu'
+        ],
+        dumpio: true }
 });
 
 const STATE_FILE = 'group_state.json';

@@ -1,8 +1,9 @@
 FROM node:latest
 
+# Install required dependencies
 RUN apt-get update && apt-get install -y \
     gconf-service \
-    libgbm-dev \
+    libgbm1 \
     libasound2 \
     libatk1.0-0 \
     libc6 \
@@ -40,29 +41,25 @@ RUN apt-get update && apt-get install -y \
     lsb-release \
     xdg-utils \
     wget \
+    # Add Chrome repo and install Chrome
+    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
+    && apt-get update \
+    && apt-get install -y google-chrome-stable \
+    # Clean up
     && rm -rf /var/lib/apt/lists/*
 
-# Install Chromium
-RUN apt-get update && apt-get install -y chromium
-
-# Set the working directory
 WORKDIR /app
 
-# Install pnpm globally
+# Install pnpm
 RUN npm install -g pnpm
 
-# Copy package.json and pnpm-lock.yaml
 COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies using pnpm
 RUN pnpm install --frozen-lockfile
 
-
-# Copy the rest of the application files
 COPY . .
 
-# Expose the port (change if your app uses a different port)
 EXPOSE 8000
 
-# Command to run the app
 CMD ["node", "app.js"]
