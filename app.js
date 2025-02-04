@@ -71,77 +71,77 @@ client.on('ready', async () => {
     console.log('Client is ready!');
     let state = loadState();
 
-    // if (!state) {
-    //     state = {
-    //         lastProcessedRow: 0,
-    //         currentGroupId: null,
-    //         currentGroupName: 'عمل 3',
-    //         currentGroupCount: 0
-    //     };
-    //     saveState(state);
-    // }
+    if (!state) {
+        state = {
+            lastProcessedRow: 0,
+            currentGroupId: null,
+            currentGroupName: 'عمل 3',
+            currentGroupCount: 0
+        };
+        saveState(state);
+    }
 
-    // async function processDailyBatch() {
-    //     try {
-    //         const startFrom = state.lastProcessedRow + 1;
-    //         const endTo = startFrom + DAILY_BATCH_SIZE - 1;
+    async function processDailyBatch() {
+        try {
+            const startFrom = state.lastProcessedRow + 1;
+            const endTo = startFrom + DAILY_BATCH_SIZE - 1;
 
-    //         const numbers = readNumbersFromExcel('numbers.xlsx', startFrom, endTo);
-    //         if (numbers.length === 0) {
-    //             console.log('All numbers processed.');
-    //             return;
-    //         }
+            const numbers = readNumbersFromExcel('numbers.xlsx', startFrom, endTo);
+            if (numbers.length === 0) {
+                console.log('All numbers processed.');
+                return;
+            }
 
-    //         let currentGroup;
-    //         if (state.currentGroupId) {
-    //             try {
-    //                 currentGroup = await client.getChatById(state.currentGroupId);
-    //                 state.currentGroupCount = currentGroup.participants.length;
-    //             } catch (error) {
-    //                 console.error('Error fetching current group:', error);
-    //                 currentGroup = null;
-    //             }
-    //         }
+            let currentGroup;
+            if (state.currentGroupId) {
+                try {
+                    currentGroup = await client.getChatById(state.currentGroupId);
+                    state.currentGroupCount = currentGroup.participants.length;
+                } catch (error) {
+                    console.error('Error fetching current group:', error);
+                    currentGroup = null;
+                }
+            }
 
-    //         if (!currentGroup || state.currentGroupCount >= MAX_GROUP_SIZE) {
-    //             currentGroup = await createNewGroup(state);
-    //             state.currentGroupCount = currentGroup.participants.length;
-    //         }
+            if (!currentGroup || state.currentGroupCount >= MAX_GROUP_SIZE) {
+                currentGroup = await createNewGroup(state);
+                state.currentGroupCount = currentGroup.participants.length;
+            }
 
-    //         const availableSlots = MAX_GROUP_SIZE - state.currentGroupCount;
-    //         const numbersToAdd = Math.min(availableSlots, numbers.length);
-    //         const batchFrom = startFrom;
-    //         const batchTo = batchFrom + numbersToAdd - 1;
+            const availableSlots = MAX_GROUP_SIZE - state.currentGroupCount;
+            const numbersToAdd = Math.min(availableSlots, numbers.length);
+            const batchFrom = startFrom;
+            const batchTo = batchFrom + numbersToAdd - 1;
 
-    //         if (numbersToAdd > 0) {
-    //             await checkNumberStatuses(currentGroup.id._serialized, currentGroup.name, 'numbers.xlsx', batchFrom, batchTo);
-    //             const updatedGroup = await client.getChatById(currentGroup.id._serialized);
-    //             state.currentGroupCount = updatedGroup.participants.length;
-    //             state.lastProcessedRow = batchTo;
-    //             saveState(state);
-    //         }
+            if (numbersToAdd > 0) {
+                await checkNumberStatuses(currentGroup.id._serialized, currentGroup.name, 'numbers.xlsx', batchFrom, batchTo);
+                const updatedGroup = await client.getChatById(currentGroup.id._serialized);
+                state.currentGroupCount = updatedGroup.participants.length;
+                state.lastProcessedRow = batchTo;
+                saveState(state);
+            }
 
-    //         const remainingNumbers = numbers.length - numbersToAdd;
-    //         if (remainingNumbers > 0) {
-    //             const remainingFrom = batchTo + 1;
-    //             const remainingTo = endTo;
-    //             const newGroup = await createNewGroup(state);
-    //             await checkNumberStatuses(newGroup.id._serialized, newGroup.name, 'numbers.xlsx', remainingFrom, remainingTo);
-    //             const updatedNewGroup = await client.getChatById(newGroup.id._serialized);
-    //             state.currentGroupCount = updatedNewGroup.participants.length;
-    //             state.lastProcessedRow = remainingTo;
-    //             saveState(state);
-    //         }
+            const remainingNumbers = numbers.length - numbersToAdd;
+            if (remainingNumbers > 0) {
+                const remainingFrom = batchTo + 1;
+                const remainingTo = endTo;
+                const newGroup = await createNewGroup(state);
+                await checkNumberStatuses(newGroup.id._serialized, newGroup.name, 'numbers.xlsx', remainingFrom, remainingTo);
+                const updatedNewGroup = await client.getChatById(newGroup.id._serialized);
+                state.currentGroupCount = updatedNewGroup.participants.length;
+                state.lastProcessedRow = remainingTo;
+                saveState(state);
+            }
 
-    //         console.log(`Processed batch from ${startFrom} to ${endTo}`);
-    //     } catch (error) {
-    //         console.error('Error processing batch:', error);
-    //     } finally {
-    //         setTimeout(processDailyBatch,  60 * 60 * 1000);
-    //     }
-    // }
+            console.log(`Processed batch from ${startFrom} to ${endTo}`);
+        } catch (error) {
+            console.error('Error processing batch:', error);
+        } finally {
+            setTimeout(processDailyBatch,  60 * 60 * 1000);
+        }
+    }
 
-    // processDailyBatch();
+    processDailyBatch();
 });
 
 client.initialize();
