@@ -7,8 +7,6 @@ const http = require('http'); // Add HTTP server
 
 const path = require('path');
 
-const puppeteer = require('puppeteer');
-
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
