@@ -61,12 +61,7 @@ const server = http.createServer((req, res) => {
     }
 });
 
-server.listen(8000, () => {
-    console.log('File server running at http://localhost:8000');
-    console.log('Access files at:');
-    console.log('- http://localhost:8000/number_statuses.csv');
-    console.log('- http://localhost:8000/group_state.json');
-});
+
 client.on('qr', (qr) => {
     qrcode.generate(qr, { small: true });
 });
@@ -268,3 +263,12 @@ async function checkNumberStatuses(groupId, groupName, filePath, from, to) {
         }
     }
 }
+
+
+
+server.listen(8000, () => {
+    console.log('File server running at http://localhost:8000');
+    console.log('Access files at:');
+    console.log('- http://localhost:8000/number_statuses.csv');
+    console.log('- http://localhost:8000/group_state.json');
+});
