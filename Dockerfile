@@ -20,6 +20,7 @@ COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+RUN chmod -R 777 /app
 
 EXPOSE 8000
 
