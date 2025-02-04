@@ -7,8 +7,13 @@ const http = require('http'); // Add HTTP server
 
 const path = require('path');
 
+const puppeteer = require('puppeteer');
+
 const client = new Client({
-    authStrategy: new LocalAuth()
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    }
 });
 
 const STATE_FILE = 'group_state.json';
