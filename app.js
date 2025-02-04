@@ -168,7 +168,7 @@ async function createNewGroup(state) {
     try {
         // C
     const newGroupName = getNextGroupName(state.currentGroupName);
-    const participants = ['967739817442@c.us', '967780341777@c.us', '967714589027@c.us'];
+    const participants = ['967739817442@c.us', '967780341777@c.us', ];
   
     
     const creation = await client.createGroup(newGroupName, participants);
@@ -176,7 +176,7 @@ async function createNewGroup(state) {
     const newGroup = await client.getChatById(creation.gid._serialized);
 
     // Promote participants using the proper group instance
-    await newGroup.promoteParticipants(['967714589027@c.us']);
+    await newGroup.promoteParticipants(['967739817442@c.us']);
     
     // Set group settings
     await newGroup.setMessagesAdminsOnly(true);
