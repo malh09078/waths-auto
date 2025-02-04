@@ -9,24 +9,10 @@ const path = require('path');
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
-        executablePath: '/usr/bin/google-chrome-stable',
-        headless: "new",
-        args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-accelerated-2d-canvas',
-            '--no-first-run',
-            '--no-zygote',
-            '--disable-gpu',
-            '--disable-features=site-per-process',  // Add this
-            '--js-flags="--max-old-space-size=512"' // Memory limit
-        ],
-        dumpio: true,
-        env: {
-            DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/1000/bus' // Fix D-Bus errors
-        }
-    }
+        headless: true,
+        defaultViewport: null,
+        executablePath: '/usr/bin/google-chrome',
+        args: ['--no-sandbox'],}
 });
 
 const STATE_FILE = 'group_state.json';
