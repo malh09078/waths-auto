@@ -6,23 +6,27 @@ const fs = require('fs');
 const http = require('http'); // Add HTTP server
 
 const path = require('path');
-
 const client = new Client({
     authStrategy: new LocalAuth(),
-    puppeteer:  {
+    puppeteer: {
         executablePath: '/usr/bin/google-chrome-stable',
-        headless: "new",  // Use new headless mode
+        headless: "new",
         args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',  // Prevent /dev/shm issues
+            '--disable-dev-shm-usage',
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--single-process',         // May help in constrained environments
-            '--disable-gpu'
+            '--disable-gpu',
+            '--disable-features=site-per-process',  // Add this
+            '--js-flags="--max-old-space-size=512"' // Memory limit
         ],
-        dumpio: true }
+        dumpio: true,
+        env: {
+            DBUS_SESSION_BUS_ADDRESS: 'unix:path=/run/user/1000/bus' // Fix D-Bus errors
+        }
+    }
 });
 
 const STATE_FILE = 'group_state.json';

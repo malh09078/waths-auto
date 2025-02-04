@@ -1,7 +1,8 @@
 FROM node:latest
 
-# Install required dependencies
+# Install required dependencies with D-Bus
 RUN apt-get update && apt-get install -y \
+    dbus \
     gconf-service \
     libgbm1 \
     libasound2 \
@@ -41,7 +42,7 @@ RUN apt-get update && apt-get install -y \
     lsb-release \
     xdg-utils \
     wget \
-    # Add Chrome repo and install Chrome
+    # Add Chrome
     && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-keyring.gpg \
     && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
     && apt-get update \
@@ -51,7 +52,6 @@ RUN apt-get update && apt-get install -y \
 
 WORKDIR /app
 
-# Install pnpm
 RUN npm install -g pnpm
 
 COPY package.json pnpm-lock.yaml ./
