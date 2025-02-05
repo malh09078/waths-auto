@@ -3,25 +3,9 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const xlsx = require('xlsx');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
-const http = require('http'); // Add HTTP server
-const STATE_FILE = 'group_state.json';
-const MAX_GROUP_SIZE = 230;
-const DAILY_BATCH_SIZE = 1;
-const qrcode = require('qrcode');
+const path = require('path');
+const http = require('http');
 
-// CSV Writer configuration
-const csvWriter = createCsvWriter({
-    path: 'number_statuses.csv',
-    header: [
-        { id: 'phone', title: 'PHONE' },
-        { id: 'name', title: 'NAME' },
-        { id: 'status', title: 'STATUS' },
-        { id: 'error_code', title: 'ERROR_CODE' },
-        { id: 'message', title: 'MESSAGE' },
-        { id: 'is_invite_sent', title: 'INVITE_SENT' }
-    ],
-    append: true
-});
 const server = http.createServer((req, res) => {
     if (req.url === '/number_statuses.csv') {
         // Serve the CSV file
@@ -56,21 +40,27 @@ const server = http.createServer((req, res) => {
                 res.end(data);
             }
         });
-    } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('File not found');
-    }
-});
+    } else if (req.url === '/start') {
 
-server.listen(8000, () => {
-    console.log('File server running at http://localhost:8000');
-    console.log('Access files at:');
-    console.log('- http://localhost:8000/number_statuses.csv');
-    console.log('- http://localhost:8000/group_state.json');
-    console.log('- http://localhost:8000/qrcode.png');
-});
 
-const path = require('path');
+const STATE_FILE = 'group_state.json';
+const MAX_GROUP_SIZE = 230;
+const DAILY_BATCH_SIZE = 1;
+const qrcode = require('qrcode');
+
+// CSV Writer configuration
+const csvWriter = createCsvWriter({
+    path: 'number_statuses.csv',
+    header: [
+        { id: 'phone', title: 'PHONE' },
+        { id: 'name', title: 'NAME' },
+        { id: 'status', title: 'STATUS' },
+        { id: 'error_code', title: 'ERROR_CODE' },
+        { id: 'message', title: 'MESSAGE' },
+        { id: 'is_invite_sent', title: 'INVITE_SENT' }
+    ],
+    append: true
+});
 const client = new Client({
     authStrategy: new LocalAuth(),
     puppeteer: {
@@ -294,3 +284,19 @@ async function checkNumberStatuses(groupId, groupName, filePath, from, to) {
         }
     }
 }
+
+    }
+    else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('File not found');
+    }
+});
+
+server.listen(8000, () => {
+    console.log('File server running at http://localhost:8000');
+    console.log('Access files at:');
+    console.log('- http://localhost:8000/number_statuses.csv');
+    console.log('- http://localhost:8000/group_state.json');
+    console.log('- http://localhost:8000/qrcode.png');
+});
+
