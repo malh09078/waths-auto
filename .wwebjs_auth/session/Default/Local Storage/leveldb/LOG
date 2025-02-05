@@ -1,3 +1,2 @@
-2025/02/05-02:37:21.525 8d0d Reusing MANIFEST /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Local Storage/leveldb/MANIFEST-000001
-2025/02/05-02:37:21.534 8d0d Recovering log #9
-2025/02/05-02:37:21.535 8d0d Reusing old log /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Local Storage/leveldb/000009.log 
+2025/02/05-03:12:38.553 b64f Creating DB /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Local Storage/leveldb since it was missing.
+2025/02/05-03:12:38.578 b64f Reusing MANIFEST /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Local Storage/leveldb/MANIFEST-000001

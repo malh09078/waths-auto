@@ -1,23 +1,13 @@
 const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
+// const qrcode = require('qrcode-terminal');
 const xlsx = require('xlsx');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 const fs = require('fs');
 const http = require('http'); // Add HTTP server
-
-const path = require('path');
-const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        defaultViewport: null,
-        executablePath: '/usr/bin/google-chrome',
-        args: ['--no-sandbox'],}
-});
-
 const STATE_FILE = 'group_state.json';
 const MAX_GROUP_SIZE = 230;
 const DAILY_BATCH_SIZE = 1;
+const qrcode = require('qrcode');
 
 // CSV Writer configuration
 const csvWriter = createCsvWriter({
@@ -32,7 +22,6 @@ const csvWriter = createCsvWriter({
     ],
     append: true
 });
-
 const server = http.createServer((req, res) => {
     if (req.url === '/number_statuses.csv') {
         // Serve the CSV file
@@ -56,16 +45,57 @@ const server = http.createServer((req, res) => {
                 res.end(data);
             }
         });
+    } else if (req.url === '/qrcode.png') {
+        // Serve the QR code image file
+        fs.readFile('qrcode.png', (err, data) => {
+            if (err) {
+                res.writeHead(500, { 'Content-Type': 'text/plain' });
+                res.end('Error reading QR code image');
+            } else {
+                res.writeHead(200, { 'Content-Type': 'image/png' });
+                res.end(data);
+            }
+        });
     } else {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('File not found');
     }
 });
 
+server.listen(8000, () => {
+    console.log('File server running at http://localhost:8000');
+    console.log('Access files at:');
+    console.log('- http://localhost:8000/number_statuses.csv');
+    console.log('- http://localhost:8000/group_state.json');
+    console.log('- http://localhost:8000/qrcode.png');
+});
+
+const path = require('path');
+const client = new Client({
+    authStrategy: new LocalAuth(),
+    puppeteer: {
+        headless: true,
+        defaultViewport: null,
+        executablePath: '/usr/bin/google-chrome',
+        args: ['--no-sandbox'],}
+});
+
+
 
 client.on('qr', (qr) => {
-    qrcode.generate(qr, { small: true });
+    // Generate a small QR code for the terminal
+    qrcode.toString(qr, { type: 'terminal', scale: 1 }, (err, url) => {
+        if (err) throw err;
+        console.log(url); // Small QR code printed in the terminal
+    });
+
+    // Alternatively, save the QR code as an image file
+    qrcode.toFile('qrcode.png', qr, { scale: 2 }, (err) => {
+        if (err) throw err;
+        console.log('QR code saved as qrcode.png');
+    });
 });
+
 
 client.on('ready', async () => {
     console.log('Client is ready!');
@@ -264,9 +294,3 @@ async function checkNumberStatuses(groupId, groupName, filePath, from, to) {
         }
     }
 }
-server.listen(8000, () => {
-    console.log('File server running at http://localhost:8000');
-    console.log('Access files at:');
-    console.log('- http://localhost:8000/number_statuses.csv');
-    console.log('- http://localhost:8000/group_state.json');
-});

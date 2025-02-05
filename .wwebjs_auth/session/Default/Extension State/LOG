@@ -1,3 +1,2 @@
-2025/02/05-02:37:21.730 8cf0 Reusing MANIFEST /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Extension State/MANIFEST-000001
-2025/02/05-02:37:21.731 8cf0 Recovering log #3
-2025/02/05-02:37:21.731 8cf0 Reusing old log /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Extension State/000003.log 
+2025/02/05-03:12:38.721 b644 Creating DB /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Extension State since it was missing.
+2025/02/05-03:12:38.727 b644 Reusing MANIFEST /home/mfoud444/1project/personal-project/auto/waths-auto/.wwebjs_auth/session/Default/Extension State/MANIFEST-000001
