@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WhatsApp Bot Manager</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .account-card { 
+            border: 1px solid #ddd; 
+            padding: 15px; 
+            margin: 10px; 
+            border-radius: 5px;
+            max-width: 300px;
+            display: inline-block;
+            vertical-align: top;
+        }
+        .qr-image { 
+            max-width: 200px; 
+            height: auto; 
+            display: block;
+            margin: 10px 0;
+        }
+        button { 
+            padding: 8px 16px; 
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #0056b3; }
+        form { margin: 20px 0; }
+        input { 
+            padding: 8px; 
+            margin-right: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 4px; 
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            display: inline-block;
+        }
+        .status.ready { background: #d4edda; color: #155724; }
+        .status.awaiting_qr { background: #fff3cd; color: #856404; }
+        .quick-links {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .quick-links a {
+            display: inline-block;
+            margin-right: 15px;
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .quick-links a:hover {
+            background: #218838;
+        }
+    </style>
+</head>
+<body>
+    <h1>WhatsApp Bot Manager</h1>
+    <div class="quick-links">
+        <a href="/shared_statuses.csv" download>Download Status Report</a>
+        <a href="/shared_state.json" download>View Shared State</a>
+    </div>
+    <form onsubmit="event.preventDefault(); addAccount()">
+        <input type="text" id="newAccountId" placeholder="Enter account ID">
+        <button type="submit">Add New Account</button>
+    </form>
+    
+    <div id="accounts">{{ACCOUNTS}}</div>
+    
+    <script>
+        function addAccount() {
+            const accountId = document.getElementById('newAccountId').value;
+            if (!accountId) return;
+
+            fetch('/add-account', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accountId })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Error adding account');
+                }
+            });
+        }
+
+        function startAccount(accountId) {
+            fetch('/start/' + accountId, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert('Error: ' + (data.error || 'Unknown error'));
+                    }
+                });
+        }
+
+      setInterval(() => {
+            document.querySelectorAll('.qr-image').forEach(img => {
+                img.src = img.src.split('?')[0] + '?t=' + Date.now();
+            });
+        }, 9000); 
+    </script>
+</body>
+</html>

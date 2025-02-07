@@ -24,4 +24,4 @@ RUN chmod -R 777 /app
 
 EXPOSE 8000
 
-CMD ["node", "app.js"]
+CMD ["node", "src/index.js"]

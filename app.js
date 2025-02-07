@@ -1,3 +1,5 @@
+i want many account whatsapp running same time to start
+
 const { Client, LocalAuth } = require('whatsapp-web.js');
 // const qrcode = require('qrcode-terminal');
 const xlsx = require('xlsx');
@@ -43,247 +45,248 @@ const server = http.createServer((req, res) => {
     } else if (req.url === '/start') {
 
 
-const STATE_FILE = 'group_state.json';
-const MAX_GROUP_SIZE = 230;
-const DAILY_BATCH_SIZE = 1;
-const qrcode = require('qrcode');
+        const STATE_FILE = 'group_state.json';
+        const MAX_GROUP_SIZE = 230;
+        const DAILY_BATCH_SIZE = 1;
+        const qrcode = require('qrcode');
 
-// CSV Writer configuration
-const csvWriter = createCsvWriter({
-    path: 'number_statuses.csv',
-    header: [
-        { id: 'phone', title: 'PHONE' },
-        { id: 'name', title: 'NAME' },
-        { id: 'status', title: 'STATUS' },
-        { id: 'error_code', title: 'ERROR_CODE' },
-        { id: 'message', title: 'MESSAGE' },
-        { id: 'is_invite_sent', title: 'INVITE_SENT' }
-    ],
-    append: true
-});
-const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: {
-        headless: true,
-        defaultViewport: null,
-        executablePath: '/usr/bin/google-chrome',
-        args: ['--no-sandbox'],}
-});
-
-
-
-client.on('qr', (qr) => {
-    // Generate a small QR code for the terminal
-    qrcode.toString(qr, { type: 'terminal', scale: 1 }, (err, url) => {
-        if (err) throw err;
-        console.log(url); // Small QR code printed in the terminal
-    });
-
-    // Alternatively, save the QR code as an image file
-    qrcode.toFile('qrcode.png', qr, { scale: 2 }, (err) => {
-        if (err) throw err;
-        console.log('QR code saved as qrcode.png');
-    });
-});
+        // CSV Writer configuration
+        const csvWriter = createCsvWriter({
+            path: 'number_statuses.csv',
+            header: [
+                { id: 'phone', title: 'PHONE' },
+                { id: 'name', title: 'NAME' },
+                { id: 'status', title: 'STATUS' },
+                { id: 'error_code', title: 'ERROR_CODE' },
+                { id: 'message', title: 'MESSAGE' },
+                { id: 'is_invite_sent', title: 'INVITE_SENT' }
+            ],
+            append: true
+        });
+        const client = new Client({
+            authStrategy: new LocalAuth(),
+            puppeteer: {
+                headless: true,
+                defaultViewport: null,
+                executablePath: '/usr/bin/google-chrome',
+                args: ['--no-sandbox'],
+            }
+        });
 
 
-client.on('ready', async () => {
-    console.log('Client is ready!');
-    let state = loadState();
 
-    if (!state) {
-        state = {
-            lastProcessedRow: 0,
-            currentGroupId: null,
-            currentGroupName: 'عمل 3',
-            currentGroupCount: 0
-        };
-        saveState(state);
-    }
+        client.on('qr', (qr) => {
+            // Generate a small QR code for the terminal
+            qrcode.toString(qr, { type: 'terminal', scale: 1 }, (err, url) => {
+                if (err) throw err;
+                console.log(url); // Small QR code printed in the terminal
+            });
 
-    async function processDailyBatch() {
-        try {
-            const startFrom = state.lastProcessedRow + 1;
-            const endTo = startFrom + DAILY_BATCH_SIZE - 1;
+            // Alternatively, save the QR code as an image file
+            qrcode.toFile('qrcode.png', qr, { scale: 2 }, (err) => {
+                if (err) throw err;
+                console.log('QR code saved as qrcode.png');
+            });
+        });
 
-            const numbers = readNumbersFromExcel('numbers.xlsx', startFrom, endTo);
-            if (numbers.length === 0) {
-                console.log('All numbers processed.');
-                return;
+
+        client.on('ready', async () => {
+            console.log('Client is ready!');
+            let state = loadState();
+
+            if (!state) {
+                state = {
+                    lastProcessedRow: 0,
+                    currentGroupId: null,
+                    currentGroupName: 'عمل 3',
+                    currentGroupCount: 0
+                };
+                saveState(state);
             }
 
-            let currentGroup;
-            if (state.currentGroupId) {
+            async function processDailyBatch() {
                 try {
-                    currentGroup = await client.getChatById(state.currentGroupId);
-                    state.currentGroupCount = currentGroup.participants.length;
+                    const startFrom = state.lastProcessedRow + 1;
+                    const endTo = startFrom + DAILY_BATCH_SIZE - 1;
+
+                    const numbers = readNumbersFromExcel('numbers.xlsx', startFrom, endTo);
+                    if (numbers.length === 0) {
+                        console.log('All numbers processed.');
+                        return;
+                    }
+
+                    let currentGroup;
+                    if (state.currentGroupId) {
+                        try {
+                            currentGroup = await client.getChatById(state.currentGroupId);
+                            state.currentGroupCount = currentGroup.participants.length;
+                        } catch (error) {
+                            console.error('Error fetching current group:', error);
+                            currentGroup = null;
+                        }
+                    }
+
+                    if (!currentGroup || state.currentGroupCount >= MAX_GROUP_SIZE) {
+                        currentGroup = await createNewGroup(state);
+                        state.currentGroupCount = currentGroup.participants.length;
+                    }
+
+                    const availableSlots = MAX_GROUP_SIZE - state.currentGroupCount;
+                    const numbersToAdd = Math.min(availableSlots, numbers.length);
+                    const batchFrom = startFrom;
+                    const batchTo = batchFrom + numbersToAdd - 1;
+
+                    if (numbersToAdd > 0) {
+                        await checkNumberStatuses(currentGroup.id._serialized, currentGroup.name, 'numbers.xlsx', batchFrom, batchTo);
+                        const updatedGroup = await client.getChatById(currentGroup.id._serialized);
+                        state.currentGroupCount = updatedGroup.participants.length;
+                        state.lastProcessedRow = batchTo;
+                        saveState(state);
+                    }
+
+                    const remainingNumbers = numbers.length - numbersToAdd;
+                    if (remainingNumbers > 0) {
+                        const remainingFrom = batchTo + 1;
+                        const remainingTo = endTo;
+                        const newGroup = await createNewGroup(state);
+                        await checkNumberStatuses(newGroup.id._serialized, newGroup.name, 'numbers.xlsx', remainingFrom, remainingTo);
+                        const updatedNewGroup = await client.getChatById(newGroup.id._serialized);
+                        state.currentGroupCount = updatedNewGroup.participants.length;
+                        state.lastProcessedRow = remainingTo;
+                        saveState(state);
+                    }
+
+                    console.log(`Processed batch from ${startFrom} to ${endTo}`);
                 } catch (error) {
-                    console.error('Error fetching current group:', error);
-                    currentGroup = null;
+                    console.error('Error processing batch:', error);
+                } finally {
+                    setTimeout(processDailyBatch, 60 * 60 * 1000);
                 }
             }
 
-            if (!currentGroup || state.currentGroupCount >= MAX_GROUP_SIZE) {
-                currentGroup = await createNewGroup(state);
-                state.currentGroupCount = currentGroup.participants.length;
-            }
+            processDailyBatch();
+        });
 
-            const availableSlots = MAX_GROUP_SIZE - state.currentGroupCount;
-            const numbersToAdd = Math.min(availableSlots, numbers.length);
-            const batchFrom = startFrom;
-            const batchTo = batchFrom + numbersToAdd - 1;
+        client.initialize();
 
-            if (numbersToAdd > 0) {
-                await checkNumberStatuses(currentGroup.id._serialized, currentGroup.name, 'numbers.xlsx', batchFrom, batchTo);
-                const updatedGroup = await client.getChatById(currentGroup.id._serialized);
-                state.currentGroupCount = updatedGroup.participants.length;
-                state.lastProcessedRow = batchTo;
-                saveState(state);
-            }
-
-            const remainingNumbers = numbers.length - numbersToAdd;
-            if (remainingNumbers > 0) {
-                const remainingFrom = batchTo + 1;
-                const remainingTo = endTo;
-                const newGroup = await createNewGroup(state);
-                await checkNumberStatuses(newGroup.id._serialized, newGroup.name, 'numbers.xlsx', remainingFrom, remainingTo);
-                const updatedNewGroup = await client.getChatById(newGroup.id._serialized);
-                state.currentGroupCount = updatedNewGroup.participants.length;
-                state.lastProcessedRow = remainingTo;
-                saveState(state);
-            }
-
-            console.log(`Processed batch from ${startFrom} to ${endTo}`);
-        } catch (error) {
-            console.error('Error processing batch:', error);
-        } finally {
-            setTimeout(processDailyBatch,  60 * 60 * 1000);
-        }
-    }
-
-    processDailyBatch();
-});
-
-client.initialize();
-
-function loadState() {
-    try {
-        if (fs.existsSync(STATE_FILE)) {
-            return JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
-        }
-    } catch (error) {
-        console.error('Error loading state:', error);
-    }
-    return null;
-}
-
-function saveState(state) {
-    try {
-        fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
-    } catch (error) {
-        console.error('Error saving state:', error);
-    }
-}
-async function createNewGroup(state) {
-    try {
-        // C
-    const newGroupName = getNextGroupName(state.currentGroupName);
-    const participants = ['967739817442@c.us', '967780341777@c.us', ];
-  
-    
-    const creation = await client.createGroup(newGroupName, participants);
-    console.error('Group creation failed:', creation);
-    const newGroup = await client.getChatById(creation.gid._serialized);
-
-    // Promote participants using the proper group instance
-    await newGroup.promoteParticipants(['967739817442@c.us']);
-    
-    // Set group settings
-    await newGroup.setMessagesAdminsOnly(true);
-    await newGroup.setInfoAdminsOnly(true);
-
-    // Update state
-    state.currentGroupId = creation.gid._serialized;
-    state.currentGroupName = newGroupName;
-    state.currentGroupCount = newGroup.participants.length;
-    saveState(state);
-    
-    return newGroup;
-} catch (error) {
-    console.error('Group creation failed:', error);
-    throw error;
-}
-}
-
-function getNextGroupName(currentName) {
-    const match = currentName.match(/عمل (\d+)/);
-    if (match) {
-        const num = parseInt(match[1], 10) + 1;
-        return `عمل ${num}`;
-    }
-    return 'عمل 3';
-}
-
-function readNumbersFromExcel(filePath, from, to) {
-    const workbook = xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const sheet = workbook.Sheets[sheetName];
-    const data = xlsx.utils.sheet_to_json(sheet);
-    if (from < 1 || to > data.length || from > to) {
-        throw new Error('Invalid range specified.');
-    }
-    const numbers = data.slice(from - 1, to).map(row => ({
-        phone: `967${row['phone number']}@c.us`,
-        name: row['name']
-    }));
-    return numbers;
-}
-
-async function checkNumberStatuses(groupId, groupName, filePath, from, to) {
-    const numbers = readNumbersFromExcel(filePath, from, to);
-    const groupChat = await client.getChatById(groupId);
-    if (!groupChat.isGroup) {
-        throw new Error('Invalid group ID provided');
-    }
-
-    for (const numberData of numbers) {
-        const resultTemplate = {
-            phone: numberData.phone,
-            name: numberData.name,
-            status: '',
-            error_code: '',
-            message: '',
-            is_invite_sent: false
-        };
-
-        try {
-            const contactId = await client.getNumberId(numberData.phone);
-            if (!contactId) {
-                await csvWriter.writeRecords([{ ...resultTemplate, status: 'UNREGISTERED', error_code: '404', message: 'Not registered on WhatsApp' }]);
-                continue;
-            }
-
-            const addResult = await groupChat.addParticipants([numberData.phone], { autoSendInviteV4: false });
-            const participantResult = addResult[numberData.phone];
-            let resultEntry;
-
-            if (participantResult.code === 200) {
-                resultEntry = { ...resultTemplate, status: 'VALID', error_code: '200', message: 'Successfully added' };
-            } else if (participantResult.code === 403) {
-                resultEntry = { ...resultTemplate, status: 'PRIVATE_INVITE_ONLY', error_code: '403', message: participantResult.message, is_invite_sent: participantResult.isInviteV4Sent };
-                if (participantResult.isInviteV4Sent) {
-                    await groupChat.sendInvite(numberData.phone);
+        function loadState() {
+            try {
+                if (fs.existsSync(STATE_FILE)) {
+                    return JSON.parse(fs.readFileSync(STATE_FILE, 'utf-8'));
                 }
-            } else {
-                resultEntry = { ...resultTemplate, status: 'UNKNOWN_ERROR', error_code: participantResult.code, message: participantResult.message };
+            } catch (error) {
+                console.error('Error loading state:', error);
+            }
+            return null;
+        }
+
+        function saveState(state) {
+            try {
+                fs.writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
+            } catch (error) {
+                console.error('Error saving state:', error);
+            }
+        }
+        async function createNewGroup(state) {
+            try {
+                // C
+                const newGroupName = getNextGroupName(state.currentGroupName);
+                const participants = ['967739817442@c.us', '967780341777@c.us',];
+
+
+                const creation = await client.createGroup(newGroupName, participants);
+                console.error('Group creation failed:', creation);
+                const newGroup = await client.getChatById(creation.gid._serialized);
+
+                // Promote participants using the proper group instance
+                await newGroup.promoteParticipants(['967739817442@c.us']);
+
+                // Set group settings
+                await newGroup.setMessagesAdminsOnly(true);
+                await newGroup.setInfoAdminsOnly(true);
+
+                // Update state
+                state.currentGroupId = creation.gid._serialized;
+                state.currentGroupName = newGroupName;
+                state.currentGroupCount = newGroup.participants.length;
+                saveState(state);
+
+                return newGroup;
+            } catch (error) {
+                console.error('Group creation failed:', error);
+                throw error;
+            }
+        }
+
+        function getNextGroupName(currentName) {
+            const match = currentName.match(/عمل (\d+)/);
+            if (match) {
+                const num = parseInt(match[1], 10) + 1;
+                return `عمل ${num}`;
+            }
+            return 'عمل 3';
+        }
+
+        function readNumbersFromExcel(filePath, from, to) {
+            const workbook = xlsx.readFile(filePath);
+            const sheetName = workbook.SheetNames[0];
+            const sheet = workbook.Sheets[sheetName];
+            const data = xlsx.utils.sheet_to_json(sheet);
+            if (from < 1 || to > data.length || from > to) {
+                throw new Error('Invalid range specified.');
+            }
+            const numbers = data.slice(from - 1, to).map(row => ({
+                phone: `967${row['phone number']}@c.us`,
+                name: row['name']
+            }));
+            return numbers;
+        }
+
+        async function checkNumberStatuses(groupId, groupName, filePath, from, to) {
+            const numbers = readNumbersFromExcel(filePath, from, to);
+            const groupChat = await client.getChatById(groupId);
+            if (!groupChat.isGroup) {
+                throw new Error('Invalid group ID provided');
             }
 
-            await csvWriter.writeRecords([resultEntry]);
-        } catch (error) {
-            await csvWriter.writeRecords([{ ...resultTemplate, status: 'UNKNOWN_ERROR', error_code: '500', message: error.message }]);
+            for (const numberData of numbers) {
+                const resultTemplate = {
+                    phone: numberData.phone,
+                    name: numberData.name,
+                    status: '',
+                    error_code: '',
+                    message: '',
+                    is_invite_sent: false
+                };
+
+                try {
+                    const contactId = await client.getNumberId(numberData.phone);
+                    if (!contactId) {
+                        await csvWriter.writeRecords([{ ...resultTemplate, status: 'UNREGISTERED', error_code: '404', message: 'Not registered on WhatsApp' }]);
+                        continue;
+                    }
+
+                    const addResult = await groupChat.addParticipants([numberData.phone], { autoSendInviteV4: false });
+                    const participantResult = addResult[numberData.phone];
+                    let resultEntry;
+
+                    if (participantResult.code === 200) {
+                        resultEntry = { ...resultTemplate, status: 'VALID', error_code: '200', message: 'Successfully added' };
+                    } else if (participantResult.code === 403) {
+                        resultEntry = { ...resultTemplate, status: 'PRIVATE_INVITE_ONLY', error_code: '403', message: participantResult.message, is_invite_sent: participantResult.isInviteV4Sent };
+                        if (participantResult.isInviteV4Sent) {
+                            await groupChat.sendInvite(numberData.phone);
+                        }
+                    } else {
+                        resultEntry = { ...resultTemplate, status: 'UNKNOWN_ERROR', error_code: participantResult.code, message: participantResult.message };
+                    }
+
+                    await csvWriter.writeRecords([resultEntry]);
+                } catch (error) {
+                    await csvWriter.writeRecords([{ ...resultTemplate, status: 'UNKNOWN_ERROR', error_code: '500', message: error.message }]);
+                }
+            }
         }
-    }
-}
 
     }
     else {
