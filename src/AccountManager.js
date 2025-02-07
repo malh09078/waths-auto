@@ -19,8 +19,10 @@ class WhatsAppAccountManager {
 
         this.client = new Client({
             authStrategy: new LocalAuth({ clientId: accountId }),
+
             puppeteer: {
                 headless: true,
+                executablePath: '/usr/bin/google-chrome',
                 args: [
                     '--no-sandbox',
                     `--user-data-dir=${this.sessionPath}`,
