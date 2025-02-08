@@ -1,80 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp Bot Manager</title>
-    <style>
-        body { font-family: Arial, sans-serif; padding: 20px; }
-        .account-card { 
-            border: 1px solid #ddd; 
-            padding: 15px; 
-            margin: 10px; 
-            border-radius: 5px;
-            max-width: 300px;
-            display: inline-block;
-            vertical-align: top;
-        }
-        .qr-image { 
-            max-width: 200px; 
-            height: auto; 
-            display: block;
-            margin: 10px 0;
-        }
-        button { 
-            padding: 8px 16px; 
-            background: #007bff; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            cursor: pointer; 
-        }
-        button:hover { background: #0056b3; }
-        form { margin: 20px 0; }
-        input { 
-            padding: 8px; 
-            margin-right: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 4px; 
-        }
-        .status {
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.9em;
-            display: inline-block;
-        }
-        .status.ready { background: #d4edda; color: #155724; }
-        .status.awaiting_qr { background: #fff3cd; color: #856404; }
-        .quick-links {
-            margin: 20px 0;
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 5px;
-        }
-        .quick-links a {
-            display: inline-block;
-            margin-right: 15px;
-            padding: 8px 16px;
-            background: #28a745;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
-        .quick-links a:hover {
-            background: #218838;
-        }
-    </style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body>
-    <h1>WhatsApp Bot Manager</h1>
-    <div class="quick-links">
-        <a href="/shared_statuses.csv" download>Download Status Report</a>
-        <a href="/shared_state.json" download>View Shared State</a>
+<body class="bg-gray-100 p-6">
+    <div class="bg-white shadow-lg border rounded-lg p-4 mb-6 flex justify-between items-center">
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-transparent bg-clip-text">WhatsApp Bot Manager</h1>
+        <button onclick="location.reload()" class="px-6 py-2 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 flex items-center">
+            <i class="fas fa-sync-alt mr-2"></i> Refresh
+        </button>
     </div>
-    <form onsubmit="event.preventDefault(); addAccount()">
-        <input type="text" id="newAccountId" placeholder="Enter account ID">
-        <button type="submit">Add New Account</button>
+
+    <div class="flex justify-center space-x-4 mb-6">
+        <a href="/shared_statuses.csv" download class="px-6 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700">Download Status Report</a>
+        <a href="/shared_state.json" download class="px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700">View Shared State</a>
+    </div>
+
+    <form onsubmit="event.preventDefault(); addAccount()" class="flex justify-center mb-6">
+        <input type="text" id="newAccountId" placeholder="Enter account ID" class="px-4 py-2 border rounded-lg shadow-md w-1/3">
+        <button type="submit" class="ml-4 px-6 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700">Add New Account</button>
     </form>
     
-    <div id="accounts">{{ACCOUNTS}}</div>
+    <div id="accounts" class="grid grid-cols-1 md:grid-cols-2 gap-6">{{ACCOUNTS}}</div>
     
     <script>
         function addAccount() {
@@ -95,7 +46,7 @@
                 }
             });
         }
-
+    
         function startAccount(accountId) {
             fetch('/start/' + accountId, { method: 'POST' })
                 .then(response => response.json())
@@ -106,11 +57,20 @@
                 });
         }
 
-   /*   setInterval(() => {
-            document.querySelectorAll('.qr-image').forEach(img => {
-                img.src = img.src.split('?')[0] + '?t=' + Date.now();
-            });
-        }, 9000); */
+        function refreshAccounts() {
+            fetch('/accounts-status')
+                .then(response => response.json())
+                .then(data => {
+                    const accountsContainer = document.getElementById('accounts');
+                    accountsContainer.innerHTML = data.accounts
+                        .map(account => generateAccountCard(account.id, account))
+                        .join('');
+                });
+        }
+
+        setInterval(refreshAccounts, 5000);
+    
+      
     </script>
 </body>
 </html>
