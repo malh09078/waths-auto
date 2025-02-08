@@ -12,7 +12,7 @@ class WhatsAppAccountManager {
         this.status = 'initializing';
         this.qrFile = path.join(CONFIG.SESSION_DIR, `qrcode_${accountId}.png`);
         this.sessionPath = path.join(CONFIG.SESSION_DIR, `session_${accountId}`);
-
+        this.processDetails = [];
         if (!fs.existsSync(this.sessionPath)) {
             fs.mkdirSync(this.sessionPath, { recursive: true });
         }
@@ -111,7 +111,7 @@ class WhatsAppAccountManager {
     }
 
     async processBatch() {
-        if (this.status !== 'ready') return;
+        if (this.status !== 'running') return;
 
         try {
             const state = this.loadSharedState();
@@ -128,6 +128,7 @@ class WhatsAppAccountManager {
             }
 
             await this.processNumbers(groupId, numbers, state);
+            
             this.saveSharedState(state);
 
             console.log(`[${this.accountId}] Processed ${numbers.length} numbers`);
@@ -220,12 +221,13 @@ class WhatsAppAccountManager {
                         await group.sendInvite(phone);
                         record.is_invite_sent = true;
                     }
-
+                    this.processDetails.push(record);
                     await this.csvWriter.writeRecords([record]);
                     state.lastProcessed++;
                 } catch (error) {
                     record.status = 'ERROR';
                     record.message = error.message;
+                    this.processDetails.push(record);
                     await this.csvWriter.writeRecords([record]);
                 }
             }
@@ -237,6 +239,16 @@ class WhatsAppAccountManager {
 
     async addNumberToGroup(phone, groupName) {
         try {
+            if (!phone.endsWith('@c.us')) {
+                phone = phone.replace(/\D/g, ''); // Remove non-numeric characters
+                if (!phone.startsWith('967')) {
+                    phone = `967${phone}`; // Add Yemen country code if missing
+                }
+                phone = `${phone}@c.us`; // Append @c.us suffix
+            }
+    
+            console.log(`Formatted phone number: ${phone}`);
+    
             // Get all chats and find the group
             const chats = await this.client.getChats();
             const group = chats.find(chat => chat.isGroup && chat.name === groupName);

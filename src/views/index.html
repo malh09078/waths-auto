@@ -139,6 +139,25 @@
         }
 
         // setInterval(refreshAccounts, 5000);
+
+
+function toggleDetails(accountId) {
+    const detailsSection = document.getElementById(`details-${accountId}`);
+    const button = detailsSection.previousElementSibling;
+
+    if (detailsSection.classList.contains('hidden')) {
+        detailsSection.classList.remove('hidden');
+        button.textContent = 'Hide Details';
+    } else {
+        detailsSection.classList.add('hidden');
+        button.textContent = 'Show Details';
+    }
+
+    // Update the manager state (optional, depending on how you want to store the open/close state)
+    const accountCard = document.querySelector(`[data-account-id='${accountId}']`);
+    const manager = accountCard.dataset.manager; // You'll need to handle the state persistence
+    manager.processDetailsOpen = !manager.processDetailsOpen;
+}
     </script>
 </body>
 </html>

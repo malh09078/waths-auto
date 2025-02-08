@@ -62,16 +62,36 @@ function handleAccountsStatus(req, res) {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ accounts: accountsData }));
 }
-// function handleRoot(req, res) {
-//     let accountsHTML = '';
-//     accounts.forEach((manager, id) => {
-//         accountsHTML += generateAccountCard(id, manager);
-//     });
 
-//     const html = htmlTemplate.replace('{{ACCOUNTS}}', accountsHTML);
-//     res.writeHead(200, { 'Content-Type': 'text/html' });
-//     res.end(html);
-// }
+
+function checkSessionFolders() {
+    const sessionDir = CONFIG.SESSION_DIR;
+
+    // Check if the session directory exists
+    if (!fs.existsSync(sessionDir)) {
+        console.log('Session directory does not exist.');
+        return;
+    }
+
+    // Read all files/folders in the session directory
+    const sessionFolders = fs.readdirSync(sessionDir);
+
+    sessionFolders.forEach(folder => {
+        // Only process folders that start with "session_"
+        if (folder.startsWith('session_') && !folder.endsWith('.png')) {
+            // Extract account ID from folder name (e.g., "session_123456")
+            const accountId = folder.replace('session_', '');
+
+            // Check if the account ID is not in the accounts map
+            if (!accounts.has(accountId)) {
+                console.log(`Found session folder for account ${accountId}, but no manager exists. Creating new manager...`);
+
+                // Create a new WhatsAppAccountManager for this account
+                accounts.set(accountId, new WhatsAppAccountManager(accountId));
+            }
+        }
+    });
+}
 
 function handleAddAccount(req, res) {
     let body = '';
@@ -108,6 +128,7 @@ function handleStartAccount(req, res) {
         return res.end(JSON.stringify({ error: 'Account not found' }));
     }
 
+    manager.status = 'running';
     manager.processBatch();
     res.writeHead(200);
     res.end(JSON.stringify({ success: true }));
@@ -167,6 +188,7 @@ function handleSharedStatuses(req, res) {
 
 
 function handleRoot(req, res) {
+    checkSessionFolders();
     let state = {};
     try {
         state = JSON.parse(fs.readFileSync(CONFIG.STATE_FILE));
@@ -179,18 +201,7 @@ function handleRoot(req, res) {
         };
     }
 
-    const replacements = {
-        CURRENT_GROUP_NAME: state.currentGroup ? 
-            `${CONFIG.BASE_GROUP_NAME} ${state.groupCounter - 1}` : 'No active group',
-        CURRENT_GROUP_MEMBERS: state.currentGroup ? 
-            (state.activeGroups.find(g => g.id === state.currentGroup)?.members || 0) : 0,
-        MAX_GROUP_SIZE: CONFIG.MAX_GROUP_SIZE,
-        CURRENT_GROUP_ID: state.currentGroup ? 
-            state.currentGroup.substring(0, 8) + '...' : 'N/A',
-        TOTAL_PROCESSED: state.lastProcessed,
-        ACTIVE_GROUPS_COUNT: state.activeGroups,
-        NEXT_GROUP_NAME: `${CONFIG.BASE_GROUP_NAME} ${state.groupCounter}`
-    };
+
 
     let accountsHTML = '';
     accounts.forEach((manager, id) => {
@@ -198,18 +209,93 @@ function handleRoot(req, res) {
     });
 
     let html = htmlTemplate
-        .replace('{{ACCOUNTS}}', accountsHTML)
-        .replace('{{CURRENT_GROUP_NAME}}', replacements.CURRENT_GROUP_NAME)
-        .replace('{{CURRENT_GROUP_MEMBERS}}', replacements.CURRENT_GROUP_MEMBERS)
-        .replace('{{MAX_GROUP_SIZE}}', replacements.MAX_GROUP_SIZE)
-        .replace('{{CURRENT_GROUP_ID}}', replacements.CURRENT_GROUP_ID)
-        .replace('{{TOTAL_PROCESSED}}', replacements.TOTAL_PROCESSED)
-        .replace('{{ACTIVE_GROUPS_COUNT}}', replacements.ACTIVE_GROUPS_COUNT)
-        .replace('{{NEXT_GROUP_NAME}}', replacements.NEXT_GROUP_NAME);
+        .replace('{{ACCOUNTS}}', accountsHTML);
 
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(html);
 }
+
+function generateAccountCard(accountId, manager) {
+    let content = '';
+    const baseContent = 
+        `<h3 class='text-xl font-semibold text-gray-900 mb-2'>${accountId}</h3>
+        <p class='text-sm font-medium py-1 px-3 rounded-full text-white ${manager.status === 'ready' ? 'bg-green-500' : manager.status === 'running' ? 'bg-blue-500' : 'bg-yellow-500'}'>
+            ${manager.status.replace('_', ' ')}
+        </p>`;
+
+    if (manager.status === 'initializing') {
+        content = 
+            `${baseContent}
+            <div class='flex items-center gap-2 text-gray-600 mt-2'>
+                <i class='fas fa-spinner fa-spin'></i>
+                <span>Initializing...</span>
+            </div>`;
+    } else if (manager.status === 'awaiting_qr') {
+        content = 
+            `${baseContent}
+            <div class='flex flex-col items-center mt-4'>
+                <img src='/qrcode/${accountId}' class='w-64 h-64 rounded-lg shadow-md border' alt='QR Code'>
+                <p class='mt-2 text-gray-600'>Scan this QR code with your phone</p>
+            </div>`;
+    } else if (manager.status === 'ready') {
+        content = 
+            `${baseContent}
+            <button onclick="startAccount('${accountId}')" class='w-full mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 flex items-center justify-center'>
+                <i class='fas fa-play mr-2'></i> Start Processing
+            </button>`;
+    } else if (manager.status === 'running') {
+        content = 
+            `${baseContent}
+            <div class='flex items-center gap-2 text-gray-600 mt-2'>
+                <i class='fas fa-spinner fa-spin'></i>
+                <span>Processing...</span>
+            </div>`;
+    } else {
+        content = baseContent;
+    }
+
+    const processDetails = manager.status === 'running' ? `
+        <div class="mt-4 w-full">
+            <h4 class="text-lg font-semibold mb-2">Process Details</h4>
+            <button onclick="toggleDetails('${accountId}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                ${manager.processDetailsOpen ? 'Hide Details' : 'Show Details'}
+            </button>
+            <div id="details-${accountId}" class="details-section ${manager.processDetailsOpen ? '' : 'hidden'}">
+                <table class="w-full border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-200">
+                            <th class="border border-gray-300 px-4 py-2">Phone</th>
+                            <th class="border border-gray-300 px-4 py-2">Name</th>
+                            <th class="border border-gray-300 px-4 py-2">Status</th>
+                            <th class="border border-gray-300 px-4 py-2">Error Code</th>
+                            <th class="border border-gray-300 px-4 py-2">Message</th>
+                            <th class="border border-gray-300 px-4 py-2">Invite Sent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${manager.processDetails.map(detail => `
+                            <tr>
+                                <td class="border border-gray-300 px-4 py-2">${detail.phone}</td>
+                                <td class="border border-gray-300 px-4 py-2">${detail.name}</td>
+                                <td class="border border-gray-300 px-4 py-2">${detail.status}</td>
+                                <td class="border border-gray-300 px-4 py-2">${detail.error_code}</td>
+                                <td class="border border-gray-300 px-4 py-2">${detail.message}</td>
+                                <td class="border border-gray-300 px-4 py-2">${detail.is_invite_sent}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    ` : '';
+
+    return `
+        <div class='bg-white p-6 rounded-lg shadow-lg border flex flex-col items-center' data-status="${manager.status}" data-account-id="${accountId}">
+            ${content}
+            ${processDetails}
+        </div>`;
+}
+
 
 function handleDashboardData(req, res) {
     try {
@@ -232,46 +318,4 @@ function handleDashboardData(req, res) {
         res.writeHead(500);
         res.end(JSON.stringify({ error: 'Could not load dashboard data' }));
     }
-}
-function generateAccountCard(accountId, manager) {
-    let content = '';
-    const baseContent = `
-        <h3 class='text-xl font-semibold text-gray-900 mb-2'>${accountId}</h3>
-        <p class='text-sm font-medium py-1 px-3 rounded-full text-white ${manager.status === 'ready' ? 'bg-green-500' : 'bg-yellow-500'}'>
-            ${manager.status.replace('_', ' ')}
-        </p>
-    `;
-
-    if (manager.status === 'initializing') {
-        content = `
-            ${baseContent}
-            <div class='flex items-center gap-2 text-gray-600 mt-2'>
-                <i class='fas fa-spinner fa-spin'></i>
-                <span>Initializing...</span>
-            </div>
-        `;
-    } else if (manager.status === 'awaiting_qr') {
-        content = `
-            ${baseContent}
-            <div class='flex flex-col items-center mt-4'>
-                <img src='/qrcode/${accountId}' class='w-64 h-64 rounded-lg shadow-md border' alt='QR Code'>
-                <p class='mt-2 text-gray-600'>Scan this QR code with your phone</p>
-            </div>
-        `;
-    } else if (manager.status === 'ready') {
-        content = `
-            ${baseContent}
-            <button onclick="startAccount('${accountId}')" class='w-full mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 flex items-center justify-center'>
-                <i class='fas fa-play mr-2'></i> Start Processing
-            </button>
-        `;
-    } else {
-        content = baseContent;
-    }
-
-    return `
-        <div class='bg-white p-6 rounded-lg shadow-lg border flex flex-col items-center' data-status="${manager.status}" data-account-id="${accountId}">
-            ${content}
-        </div>
-    `;
 }

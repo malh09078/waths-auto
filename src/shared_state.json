@@ -1,6 +1,9 @@
 {
-  "lastProcessedRow": 49,
-  "currentGroupId": "120363394726561519@g.us",
+  "lastProcessed": 52,
+  "currentGroup": "120363394726561519@g.us",
   "currentGroupName": "عمل 4",
-  "currentGroupCount": 4
+  "groupCounter": 4,
+  "activeGroups": [
+    "120363394726561519@g.us"
+  ]
 }
