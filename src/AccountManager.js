@@ -149,13 +149,16 @@ class WhatsAppAccountManager {
     async createGroup(state) {
         try {
             const   numberAdded = [
-            '730442027@c.us', 
-            '730446721@c.us',
-            '730426743@c.us',
-            '730416694@c.us',
-            '730436848@c.us',
+            '730442027@c.us', //1
+            '730446721@c.us', //2
+            '730426743@c.us',//3
+            '730416694@c.us',//4
+            '730436848@c.us',//5
 
         '736704949@c.us',//mohammed old
+
+        '782726213@c.us',//6
+        '737536699@c.us',//7
     
     
     
