@@ -147,14 +147,32 @@ class WhatsAppAccountManager {
 
     async createGroup(state) {
         try {
+            const   numberAdded = [
+            '730442027@c.us', 
+            '730446721@c.us',
+            '730426743@c.us',
+            '730416694@c.us',
+            '730436848@c.us',
+
+        '736704949@c.us',//mohammed old
+    
+    
+    
+        '967739817442@c.us', //unclue
+        '967780341777@c.us' //mohammed alhas
+        ]
+
+            
             const groupName = `${CONFIG.BASE_GROUP_NAME} ${state.groupCounter++}`;
-            const creation = await this.client.createGroup(groupName, [
-                '967739817442@c.us',
-                '967780341777@c.us'
-            ]);
+            const creation = await this.client.createGroup(groupName, numberAdded);
 
             const group = await this.client.getChatById(creation.gid._serialized);
-            await group.promoteParticipants(['967739817442@c.us']);
+            await group.promoteParticipants([
+                '730442027@c.us', 
+                '730446721@c.us',
+                '730426743@c.us',
+                '730416694@c.us',
+                '730436848@c.us']);
             await group.setMessagesAdminsOnly(true);
             await group.setInfoAdminsOnly(true);
 
