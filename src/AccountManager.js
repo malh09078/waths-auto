@@ -176,7 +176,9 @@ class WhatsAppAccountManager {
                 '730446721@c.us',
                 '730426743@c.us',
                 '730416694@c.us',
-                '730436848@c.us']);
+                '730436848@c.us',
+                '782726213@c.us',
+                '737536699@c.us',]);
             await group.setMessagesAdminsOnly(true);
             await group.setInfoAdminsOnly(true);
 
