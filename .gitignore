@@ -35,3 +35,6 @@ coverage
 # Environment variables files
 /service/.env
 Trash
+session
+.wwebjs_auth
+.wwebjs_cache

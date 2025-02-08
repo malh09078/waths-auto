@@ -278,9 +278,9 @@ function generateAccountCard(accountId, manager) {
                                 <td class="border border-gray-300 px-4 py-2">${detail.phone}</td>
                                 <td class="border border-gray-300 px-4 py-2">${detail.name}</td>
                                 <td class="border border-gray-300 px-4 py-2">${detail.status}</td>
-                                <td class="border border-gray-300 px-4 py-2">${detail.error_code}</td>
-                                <td class="border border-gray-300 px-4 py-2">${detail.message}</td>
-                                <td class="border border-gray-300 px-4 py-2">${detail.is_invite_sent}</td>
+                            <td class="border border-gray-300 px-4 py-2">${detail.error_code || 'N/A'}</td>
+                            <td class="border border-gray-300 px-4 py-2">${detail.message || 'N/A'}</td>
+                            <td class="border border-gray-300 px-4 py-2">${detail.is_invite_sent || 'N/A'}</td>
                             </tr>
                         `).join('')}
                     </tbody>
