@@ -24,6 +24,28 @@ module.exports = function (req, res) {
         handleDashboardData(req, res);
     }else if (req.url === '/accounts-status') {
         handleAccountsStatus(req, res);
+    }  else if (req.method === 'POST' && req.url === '/add-number-to-group') {
+        // Handle adding number to group
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+            try {
+                const { accountId, phone, groupName } = JSON.parse(body);
+                const manager = accounts.get(accountId);
+                
+                if (!manager) {
+                    res.writeHead(404);
+                    return res.end(JSON.stringify({ success: false, message: 'Account not found' }));
+                }
+
+                const result = await manager.addNumberToGroup(phone, groupName);
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify(result));
+            } catch (error) {
+                res.writeHead(500);
+                res.end(JSON.stringify({ success: false, message: error.message }));
+            }
+        });
     }
     else {
         res.writeHead(404);
@@ -211,7 +233,6 @@ function handleDashboardData(req, res) {
         res.end(JSON.stringify({ error: 'Could not load dashboard data' }));
     }
 }
-
 function generateAccountCard(accountId, manager) {
     let content = '';
     const baseContent = `
@@ -249,7 +270,7 @@ function generateAccountCard(accountId, manager) {
     }
 
     return `
-        <div class='bg-white p-6 rounded-lg shadow-lg border flex flex-col items-center'>
+        <div class='bg-white p-6 rounded-lg shadow-lg border flex flex-col items-center' data-status="${manager.status}" data-account-id="${accountId}">
             ${content}
         </div>
     `;

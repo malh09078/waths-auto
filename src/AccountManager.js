@@ -233,5 +233,60 @@ class WhatsAppAccountManager {
             console.error('Number processing error:', error);
         }
     }
+
+
+    async addNumberToGroup(phone, groupName) {
+        try {
+            // Get all chats and find the group
+            const chats = await this.client.getChats();
+            const group = chats.find(chat => chat.isGroup && chat.name === groupName);
+    
+            if (!group) {
+                console.error(`Group '${groupName}' not found.`);
+                return { success: false, message: "Group not found" };
+            }
+    
+            const record = {
+                phone,
+                status: 'PENDING',
+                error_code: '',
+                message: '',
+                is_invite_sent: false
+            };
+    
+            // Check if number is valid
+            const contactId = await this.client.getNumberId(phone);
+            if (!contactId) {
+                record.status = 'INVALID';
+                record.message = 'Number not registered';
+                await this.csvWriter.writeRecords([record]);
+                return { success: false, message: "Number not registered" };
+            }
+    
+            // Add participant
+            const result = await group.addParticipants([phone], { autoSendInviteV4: false });
+            const participantResult = result[phone];
+    
+            record.status = participantResult.code === 200 ? 'ADDED' : 'FAILED';
+            record.error_code = participantResult.code;
+            record.message = participantResult.message;
+            record.is_invite_sent = participantResult.isInviteV4Sent;
+    
+            // Handle invitation if needed
+            if (participantResult.code === 403 && !participantResult.isInviteV4Sent) {
+                await group.sendInvite(phone);
+                record.is_invite_sent = true;
+            }
+    
+            await this.csvWriter.writeRecords([record]);
+    
+            return { success: participantResult.code === 200, message: participantResult.message };
+    
+        } catch (error) {
+            console.error('Error adding number to group:', error);
+            return { success: false, message: error.message };
+        }
+    }
+    
 }
 module.exports = WhatsAppAccountManager;

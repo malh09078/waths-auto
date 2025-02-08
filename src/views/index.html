@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp Bot Manager</title>
@@ -9,6 +8,33 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-100 p-6">
+    <!-- Add Number Modal -->
+    <div id="addNumberModal" class="fixed inset-0 bg-black bg-opacity-50 hidden">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-auto mt-20">
+            <h3 class="text-xl font-bold mb-4">Add Number to Group</h3>
+            <form id="addNumberForm">
+                <div class="mb-4">
+                    <label class="block mb-2">Phone Number</label>
+                    <input type="text" id="phoneNumber" class="w-full px-3 py-2 border rounded" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Group Name</label>
+                    <input type="text" id="groupName" class="w-full px-3 py-2 border rounded" required>
+                </div>
+                <div class="mb-4">
+                    <label class="block mb-2">Account ID</label>
+                    <input type="text" id="accountId" class="w-full px-3 py-2 border rounded" required>
+                    <p class="text-sm text-gray-500 mt-1">Enter the account ID of a ready account</p>
+                </div>
+                <div class="flex justify-end">
+                    <button type="button" onclick="closeModal()" class="mr-2 px-4 py-2 bg-gray-500 text-white rounded">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded">Add Number</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content -->
     <div class="bg-white shadow-lg border rounded-lg p-4 mb-6 flex justify-between items-center">
         <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-500 to-purple-600 text-transparent bg-clip-text">WhatsApp Bot Manager</h1>
         <button onclick="location.reload()" class="px-6 py-2 bg-gray-600 text-white rounded-lg shadow-md hover:bg-gray-700 flex items-center">
@@ -19,6 +45,9 @@
     <div class="flex justify-center space-x-4 mb-6">
         <a href="/shared_statuses.csv" download class="px-6 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700">Download Status Report</a>
         <a href="/shared_state.json" download class="px-6 py-2 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700">View Shared State</a>
+        <button onclick="openAddNumberModal()" class="px-6 py-2 bg-purple-600 text-white rounded-lg shadow-md hover:bg-purple-700">
+            <i class="fas fa-plus mr-2"></i>Add Number to Group
+        </button>
     </div>
 
     <form onsubmit="event.preventDefault(); addAccount()" class="flex justify-center mb-6">
@@ -29,6 +58,46 @@
     <div id="accounts" class="grid grid-cols-1 md:grid-cols-2 gap-6">{{ACCOUNTS}}</div>
     
     <script>
+        function openAddNumberModal() {
+            document.getElementById('addNumberModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('addNumberModal').classList.add('hidden');
+        }
+
+        async function addNumberToGroup() {
+            const phone = document.getElementById('phoneNumber').value;
+            const groupName = document.getElementById('groupName').value;
+            const accountId = document.getElementById('accountId').value;
+
+            // Validate account status
+         
+
+            try {
+                const response = await fetch('/add-number-to-group', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ accountId, phone, groupName })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Number added successfully!');
+                    closeModal();
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            }
+        }
+
+        document.getElementById('addNumberForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            addNumberToGroup();
+        });
+
         function addAccount() {
             const accountId = document.getElementById('newAccountId').value;
             if (!accountId) return;
@@ -69,9 +138,7 @@
                 });
         }
 
-        setInterval(refreshAccounts, 5000);
-    
-      
+        // setInterval(refreshAccounts, 5000);
     </script>
 </body>
 </html>
