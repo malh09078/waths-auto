@@ -23,5 +23,5 @@ COPY . .
 RUN chmod -R 777 /app
 
 EXPOSE 8000
-
-CMD ["node", "src/index.js"]
+WORKDIR /app/src
+CMD ["node", "index.js"]
