@@ -1,7 +1,7 @@
 const path = require('path');
 
 module.exports = {
-    PORT: 8081,
+    PORT: 8000,
     MAX_GROUP_SIZE: 230,
     DAILY_BATCH_SIZE: 1,
     EXCEL_FILE: 'numbers.xlsx',
